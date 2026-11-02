@@ -23,53 +23,10 @@ pip install numpy==2.4.6 pandas==3.1.0
 python winner_set_trap.py
 ```
 
-```python
-"""Synthetic demo: a winners'-cut denominator can invert a per-tag verdict.
+The script is embedded from the public gist, so the code is not duplicated here. The embed shows the file as highlighted source and does not run it.
 
-Everything here is generated from a fixed seed. No real data is used.
-Requires: numpy, pandas (tested with numpy 2.x, pandas 2.x).
-"""
-import numpy as np
-import pandas as pd
+<script src="https://gist.github.com/rumor-thrower/42dbfc0c3b93f3c1a6c20af169cc5f83.js?file=winner_set_trap.py"></script>
 
-SEED = 42
-N_WORKS = 100_000
-TOP_N = 1_000
-
-rng = np.random.default_rng(SEED)
-
-# Tag A: common, moderate typical views, few extreme hits.
-# Tag B: rarer, lower typical views, but heavy-tailed (occasional mega-hits).
-tag = rng.choice(["A", "B", "C"], size=N_WORKS, p=[0.40, 0.10, 0.50])
-log_mu = np.select([tag == "A", tag == "B"], [7.5, 6.8], default=7.0)
-log_sd = np.select([tag == "A", tag == "B"], [0.8, 1.9], default=1.0)
-# View counts are non-negative integers. Draw a continuous lognormal,
-# round to the nearest integer, and floor at 1 so no work has zero views.
-views = np.maximum(1, np.rint(np.exp(rng.normal(log_mu, log_sd)))).astype(np.int64)
-
-works = pd.DataFrame({"tag": tag, "views": views})
-
-# Denominator 1: the full population carrying each tag.
-full = works.groupby("tag")["views"].agg(
-    n="size", median="median", mean="mean"
-)
-
-# Denominator 2: the winners' set (top-N works by views, across all tags).
-top = works.nlargest(TOP_N, "views")
-top_counts = top["tag"].value_counts().rename("n_in_top")
-share_in_top = (top_counts / full["n"]).rename("share_of_tag_in_top")
-
-summary = full.join(top_counts).join(share_in_top)
-
-print(f"seed={SEED} works={N_WORKS} top_n={TOP_N}")
-print(summary.round({"median": 1, "mean": 1, "share_of_tag_in_top": 4}).to_string())
-
-# The verdict you get from each denominator.
-print()
-print("Verdict by full-population median:", full["median"].idxmax())
-print("Verdict by mean views of top-N   :", top.groupby("tag")["views"].mean().idxmax())
-print("Verdict by share of tag in top-N :", share_in_top.idxmax())
-```
 
 Output:
 
